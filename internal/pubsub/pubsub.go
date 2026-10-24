@@ -73,16 +73,5 @@ func DeclareAndBind (
 
 	return clientChan, clientQueue, nil
 
-
-
-
-
-
-
-
-
-
-
-	return nil, amqp.Queue{}, nil
 }
 
