@@ -4,8 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 
 	amqp "github.com/rabbitmq/amqp091-go"
+)
+
+
+
+type SimpleQueueType string 
+
+const (
+	Durable SimpleQueueType = "durable"
+	Transient SimpleQueueType = "transient"
 )
 
 func PublishJSON[T any](ch *amqp.Channel, exchange, key string, val T) error {
@@ -33,21 +43,46 @@ func PublishJSON[T any](ch *amqp.Channel, exchange, key string, val T) error {
 
 	if err != nil {
 		fmt.Printf("Error publishing message: %+v\n",err)
+		os.Exit(1)
 	}
-
-	return nil
-
-
-
-
-
-
-
-
-
-
-	fmt.Printf("%+v\n",jsonBytes)
-
-
 	return nil
 }
+
+func DeclareAndBind (
+	conn *amqp.Connection,
+	exchange,
+	queueName,
+	key string,
+	queueType SimpleQueueType, // SimpleQueueType is an "enum" type I made to represent "durable" or "transient"
+) (*amqp.Channel, amqp.Queue, error) {
+
+	clientChan, err := conn.Channel()
+	if err != nil {
+		return &amqp.Channel{}, amqp.Queue{}, err
+	}
+
+	durable := queueType == Durable
+	autoDelete := queueType == Transient
+	exclusive := queueType == Transient
+	noWait := false
+
+	clientQueue, err := clientChan.QueueDeclare(queueName, durable, autoDelete, exclusive, noWait, nil)
+	if err != nil {
+		return &amqp.Channel{}, amqp.Queue{}, err
+	}
+
+	return clientChan, clientQueue, nil
+
+
+
+
+
+
+
+
+
+
+
+	return nil, amqp.Queue{}, nil
+}
+
