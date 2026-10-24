@@ -31,6 +31,7 @@ func main() {
 
 	fmt.Println("Connected to localhost:5672")
 
+	inputLoop:
 	for {
 		input := gamelogic.GetInput()
 		if len(input) == 0 {
@@ -53,6 +54,7 @@ func main() {
 			fmt.Println("Spamming not allowed yet!")
 		case "quit":
 			gamelogic.PrintQuit()
+			break inputLoop
 		default:
 			fmt.Printf("Unknown command: %s\n",input[0])
 			continue
