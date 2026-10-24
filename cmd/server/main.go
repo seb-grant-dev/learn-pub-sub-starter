@@ -4,8 +4,8 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 	"fmt"
 	"os"
-	"os/signal"
 
+	"github.com/bootdotdev/learn-pub-sub-starter/internal/gamelogic"
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/pubsub"
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/routing"
 )
@@ -28,18 +28,32 @@ func main() {
 		os.Exit(1)
 	}
 
-	state := routing.PlayingState{IsPaused:true}
-	pubsub.PublishJSON(msgChan,routing.ExchangePerilDirect,routing.PauseKey,state)
-
-
 	fmt.Println("Connected to localhost:5672")
-	signalChan := make(chan os.Signal, 1)
-	signal.Notify(signalChan, os.Interrupt)
 
-	sig := <- signalChan
-	if sig.String() == "interrupt" {
+	gamelogic.PrintServerHelp()
 
-		fmt.Println("Shutting down...")
-		signal.Stop(signalChan)
+	inputLoop:
+	for {
+		input := gamelogic.GetInput()
+		if len(input) == 0 {
+			continue
+		}
+
+		switch input[0] {
+		case "pause":
+			fmt.Println("Pausing...")
+			pubsub.PublishJSON(msgChan,routing.ExchangePerilDirect,routing.PauseKey,routing.PlayingState{IsPaused:true})
+		case "resume":
+			fmt.Println("Resuming...")
+			pubsub.PublishJSON(msgChan,routing.ExchangePerilDirect,routing.PauseKey,routing.PlayingState{IsPaused:false})
+		case "help":
+			gamelogic.PrintServerHelp()
+		case "quit":
+			fmt.Println("Exiting...")
+			break inputLoop
+		default:
+			fmt.Printf("Unknown command: %s\n",input[0])
+		}
 	}
+
 }

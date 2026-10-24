@@ -4,7 +4,6 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 	"fmt"
 	"os"
-	"os/signal"
 	
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/gamelogic"
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/pubsub"
@@ -26,18 +25,37 @@ func main() {
 		fmt.Println("Error: Username not provided.")
 	}
 
-
 	pubsub.DeclareAndBind(connection, routing.ExchangePerilDirect, fmt.Sprintf("%s.%s",routing.PauseKey,username), routing.PauseKey, pubsub.Transient)
 
+	gameState := gamelogic.NewGameState(username)
 
 	fmt.Println("Connected to localhost:5672")
-	signalChan := make(chan os.Signal, 1)
-	signal.Notify(signalChan, os.Interrupt)
 
-	sig := <- signalChan
-	if sig.String() == "interrupt" {
+	for {
+		input := gamelogic.GetInput()
+		if len(input) == 0 {
+			continue
+		}
 
-		fmt.Println("Shutting down...")
-		signal.Stop(signalChan)
+		switch input[0] {
+		case "spawn":
+			gameState.CommandSpawn(input)
+		case "move":
+			_, err := gameState.CommandMove(input)
+			if err == nil {
+				fmt.Println("Move successful")
+			}
+		case "status":
+			gameState.CommandStatus()
+		case "help":
+			gamelogic.PrintClientHelp()
+		case "spam":
+			fmt.Println("Spamming not allowed yet!")
+		case "quit":
+			gamelogic.PrintQuit()
+		default:
+			fmt.Printf("Unknown command: %s\n",input[0])
+			continue
+		}
 	}
 }
