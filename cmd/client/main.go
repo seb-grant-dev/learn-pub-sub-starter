@@ -3,6 +3,7 @@ package main
 import (
 	amqp "github.com/rabbitmq/amqp091-go"
 	"fmt"
+	"log"
 	"os"
 	
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/gamelogic"
@@ -25,9 +26,12 @@ func main() {
 		fmt.Println("Error: Username not provided.")
 	}
 
-	pubsub.DeclareAndBind(connection, routing.ExchangePerilDirect, fmt.Sprintf("%s.%s",routing.PauseKey,username), routing.PauseKey, pubsub.Transient)
-
 	gameState := gamelogic.NewGameState(username)
+
+	err = pubsub.SubscribeJSON(connection, routing.ExchangePerilDirect, fmt.Sprintf("%s.%s",routing.PauseKey, username),routing.PauseKey,pubsub.Transient, HandlerPause(gameState))
+	if err != nil {
+		log.Fatalf("Fatal: Error subscribing to JSON: %s",err)
+	}
 
 	fmt.Println("Connected to localhost:5672")
 
