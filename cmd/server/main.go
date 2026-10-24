@@ -32,6 +32,8 @@ func main() {
 
 	gamelogic.PrintServerHelp()
 
+	pubsub.DeclareAndBind(connection,routing.ExchangePerilDirect, "game_logs", "game_logs.*", pubsub.Durable)
+
 	inputLoop:
 	for {
 		input := gamelogic.GetInput()
