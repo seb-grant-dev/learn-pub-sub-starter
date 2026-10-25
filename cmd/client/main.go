@@ -41,8 +41,28 @@ func main() {
 	}
 
 	// Subscribe to Moves queue
-	err = pubsub.SubscribeJSON(connection, routing.ExchangePerilTopic, fmt.Sprintf("%s.%s",routing.ArmyMovesPrefix, username),fmt.Sprintf("%s.*",routing.ArmyMovesPrefix), pubsub.Transient, HandlerArmyMove(gameState))
+	err = pubsub.SubscribeJSON(
+		connection,
+		routing.ExchangePerilTopic,
+		fmt.Sprintf("%s.%s",routing.ArmyMovesPrefix, username),
+		fmt.Sprintf("%s.*",routing.ArmyMovesPrefix),
+		pubsub.Transient,
+		HandlerArmyMove(gameState, clientChan),
+	)
+	// Subscribe to War queue
+	err = pubsub.SubscribeJSON(
+		connection,
+		routing.ExchangePerilTopic,
+		routing.WarRecognitionsPrefix,
+		fmt.Sprintf("%s.*",routing.WarRecognitionsPrefix),
+		pubsub.Durable,
+		HandlerWar(gameState),
+	)
 
+	if err != nil {
+		fmt.Printf("Fatal: %s\n",err)
+		os.Exit(1)
+	}
 
 	inputLoop:
 	for {

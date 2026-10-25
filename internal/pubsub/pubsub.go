@@ -74,7 +74,9 @@ func DeclareAndBind (
 	exclusive := queueType == Transient
 	noWait := false
 
-	clientQueue, err := clientChan.QueueDeclare(queueName, durable, autoDelete, exclusive, noWait, nil)
+	clientQueue, err := clientChan.QueueDeclare(queueName, durable, autoDelete, exclusive, noWait, amqp.Table{
+		"x-dead-letter-exchange":"peril_dlx",
+	})
 	if err != nil {
 		return &amqp.Channel{}, amqp.Queue{}, err
 	}
@@ -111,16 +113,14 @@ func SubscribeJSON[T any](
 			err := json.Unmarshal(del.Body, &m)
 			if err == nil {
 				ackType := handler(m)
-				fmt.Printf("Delivery ack type: %s\n",ackType)
 				switch ackType {
 				case Ack:
 					del.Ack(false)
 				case NackRequeue:
 					del.Nack(false, true)
 				case NackDiscard:
-					del.Nack(false,false)
+					del.Nack(false, false)
 				}
-				del.Ack(false)
 			} else {
 				fmt.Println("Error unmarshalling JSON:",err)
 			}
