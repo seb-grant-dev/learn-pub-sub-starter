@@ -13,8 +13,6 @@ func HandlerWar(gs *gamelogic.GameState) func(gamelogic.RecognitionOfWar) pubsub
 		
 		defer fmt.Println("> ")
 		outcome, _, _ := gs.HandleWar(msg)
-
-		fmt.Println("HandlerWare outcome: ",outcome)
 		
 		switch outcome {
 		case gamelogic.WarOutcomeNotInvolved:

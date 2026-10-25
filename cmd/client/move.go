@@ -24,9 +24,9 @@ func HandlerArmyMove(gs *gamelogic.GameState, channel *amqp.Channel) func(gamelo
 				Defender: gs.GetPlayerSnap(),
 			})
 			if err != nil {
-				fmt.Println("Error publishing war outcome: ",err)
+				return pubsub.NackRequeue
 			}
-			return pubsub.NackRequeue
+			return pubsub.Ack
 		case gamelogic.MoveOutcomeSamePlayer:
 			return pubsub.NackDiscard
 		default:
