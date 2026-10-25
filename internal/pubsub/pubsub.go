@@ -104,6 +104,8 @@ func SubscribeJSON[T any](
 			if err == nil {
 				handler(m)
 				del.Ack(false)
+			} else {
+				fmt.Println("Error unmarshalling JSON:",err)
 			}
 		}
 	}()

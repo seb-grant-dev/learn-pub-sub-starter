@@ -35,6 +35,15 @@ func main() {
 
 	fmt.Println("Connected to localhost:5672")
 
+	clientChan, err := connection.Channel()
+	if err != nil {
+		log.Fatalf("Fatal: Could not connect to game: %s",err)
+	}
+
+	// Subscribe to Moves queue
+	err = pubsub.SubscribeJSON(connection, routing.ExchangePerilTopic, fmt.Sprintf("%s.%s",routing.ArmyMovesPrefix, username),fmt.Sprintf("%s.*",routing.ArmyMovesPrefix), pubsub.Transient, HandlerArmyMove(gameState))
+
+
 	inputLoop:
 	for {
 		input := gamelogic.GetInput()
@@ -46,9 +55,15 @@ func main() {
 		case "spawn":
 			gameState.CommandSpawn(input)
 		case "move":
-			_, err := gameState.CommandMove(input)
+			move, err := gameState.CommandMove(input)
 			if err == nil {
 				fmt.Println("Move successful")
+				pubErr := pubsub.PublishJSON(clientChan,routing.ExchangePerilTopic,fmt.Sprintf("%s.%s",routing.ArmyMovesPrefix,username),move)
+				if pubErr != nil {
+					fmt.Println("Error publishing the move")
+				} else {
+					fmt.Println("Move published")
+				}
 			}
 		case "status":
 			gameState.CommandStatus()
