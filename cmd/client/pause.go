@@ -4,13 +4,15 @@ import (
 	"fmt"
 
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/gamelogic"
+	"github.com/bootdotdev/learn-pub-sub-starter/internal/pubsub"
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/routing"
 )
 
-func HandlerPause(gs *gamelogic.GameState) func(routing.PlayingState){
+func HandlerPause(gs *gamelogic.GameState) func(routing.PlayingState) pubsub.AckType{
 	defer fmt.Printf("> ")
 
-	return func(ps routing.PlayingState){
+	return func(ps routing.PlayingState) pubsub.AckType {
 		gs.HandlePause(ps)
+		return pubsub.Ack
 	}
 }
