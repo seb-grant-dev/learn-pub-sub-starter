@@ -3,6 +3,7 @@ package main
 import (
 	amqp "github.com/rabbitmq/amqp091-go"
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/gamelogic"
@@ -32,7 +33,11 @@ func main() {
 
 	gamelogic.PrintServerHelp()
 
-	pubsub.DeclareAndBind(connection,routing.ExchangePerilDirect, "game_logs", "game_logs.*", pubsub.Durable)
+	err = pubsub.SubscribeGob(connection, routing.ExchangePerilDirect, routing.GameLogSlug, fmt.Sprintf("%s.*",routing.GameLogSlug),pubsub.Durable, HandlerGameLog())
+	if err != nil {
+		log.Fatalf("Fatal: Error subscribing to Gob: %s",err)
+	}
+
 
 	inputLoop:
 	for {

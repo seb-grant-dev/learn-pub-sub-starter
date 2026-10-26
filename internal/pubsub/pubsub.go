@@ -63,7 +63,6 @@ func PublishJSON[T any](ch *amqp.Channel, exchange, key string, val T) error {
 
 func PublishGob[T any](ch *amqp.Channel, exchange, key string, val T) error {
 
-	fmt.Println("Publishing gob for key:",val,key)
 	var gBytes bytes.Buffer
 	encoder := gob.NewEncoder(&gBytes)
 
@@ -94,8 +93,6 @@ func PublishGob[T any](ch *amqp.Channel, exchange, key string, val T) error {
 
 
 func PublishGameLog(ch *amqp.Channel, msg, username string) error {
-
-	fmt.Println("Publishing msg for user:",msg,username)
 
 	exchange := routing.ExchangePerilTopic
 	routingKey := fmt.Sprintf("%s.%s",routing.GameLogSlug,username)
@@ -137,6 +134,51 @@ func DeclareAndBind (
 
 	return clientChan, clientQueue, nil
 
+}
+func SubscribeGob[T any](
+    conn *amqp.Connection,
+    exchange,
+    queueName,
+    key string,
+    queueType SimpleQueueType, // an enum to represent "durable" or "transient"
+    handler func(T) AckType,
+) error {
+
+	clientChan, _, err := DeclareAndBind(conn, exchange, queueName, key, queueType)
+	if err != nil {
+		fmt.Printf("Error binding to channel: %s\n",err)
+		return err
+	}
+
+	ch, err := clientChan.Consume(queueName,"",false, false, false, false, nil)
+	if err != nil {
+		fmt.Printf("Error consuming channel: %s\n",err)
+		return err
+	}
+
+	go func() {
+		for del := range ch {
+			var m T
+			decoder := gob.NewDecoder(bytes.NewBuffer(del.Body))
+			err := decoder.Decode(&m)
+			if err == nil {
+				fmt.Printf("Gob response: %+v\n",m)
+				ackType := handler(m)
+				switch ackType {
+				case Ack:
+					del.Ack(false)
+				case NackRequeue:
+					del.Nack(false, true)
+				case NackDiscard:
+					del.Nack(false, false)
+				}
+			} else {
+				fmt.Println("Error unmarshalling JSON:",err)
+			}
+		}
+	}()
+
+	return nil
 }
 func SubscribeJSON[T any](
     conn *amqp.Connection,

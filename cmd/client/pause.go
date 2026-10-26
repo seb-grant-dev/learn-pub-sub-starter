@@ -9,9 +9,9 @@ import (
 )
 
 func HandlerPause(gs *gamelogic.GameState) func(routing.PlayingState) pubsub.AckType{
-	defer fmt.Printf("> ")
 
 	return func(ps routing.PlayingState) pubsub.AckType {
+		defer fmt.Println("> ")
 		gs.HandlePause(ps)
 		return pubsub.Ack
 	}
