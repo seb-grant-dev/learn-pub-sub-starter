@@ -1,12 +1,17 @@
 package pubsub
 
 import (
+	"bytes"
 	"context"
+	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"os"
+	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
+
+	"github.com/bootdotdev/learn-pub-sub-starter/internal/routing"
 )
 
 
@@ -54,6 +59,53 @@ func PublishJSON[T any](ch *amqp.Channel, exchange, key string, val T) error {
 		os.Exit(1)
 	}
 	return nil
+}
+
+func PublishGob[T any](ch *amqp.Channel, exchange, key string, val T) error {
+
+	fmt.Println("Publishing gob for key:",val,key)
+	var gBytes bytes.Buffer
+	encoder := gob.NewEncoder(&gBytes)
+
+	err := encoder.Encode(val)
+	if err != nil {
+		return err
+	}
+
+	ctx := context.Background()
+	mandatory := false
+	immediate := false
+	rabbitOpts := amqp.Publishing{
+		ContentType: "application/gob",
+		Body: gBytes.Bytes(),
+	}
+
+	return ch.PublishWithContext(
+		ctx,
+		exchange,
+		key,
+		mandatory,
+		immediate,
+		rabbitOpts,
+	)
+
+}
+
+
+
+func PublishGameLog(ch *amqp.Channel, msg, username string) error {
+
+	fmt.Println("Publishing msg for user:",msg,username)
+
+	exchange := routing.ExchangePerilTopic
+	routingKey := fmt.Sprintf("%s.%s",routing.GameLogSlug,username)
+
+	return PublishGob(ch, exchange, routingKey, routing.GameLog{
+		CurrentTime: time.Now(),
+		Message: msg,
+		Username: username,
+	})
+
 }
 
 func DeclareAndBind (
